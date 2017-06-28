@@ -1,0 +1,135 @@
+<link rel="import" href="../polymer/polymer-element.html">
+<link rel="import" href="../cube-resource/cube-resource.html">
+
+<dom-module id="cube-repeat" attributes="template-url data-url data">
+    <template>
+        <style>
+            :host {
+                display: block;
+            }
+        </style>
+
+        <cube-resource auto="[[dataUrl]]" url="[[dataUrl]]"
+                       data="{{data}}"></cube-resource>
+
+        <cube-resource auto="[[templateUrl]]" url="[[templateUrl]]"
+                       data="{{_pendingTpl}}" status="{{_status}}"></cube-resource>
+
+        <dom-repeat id="rep" items="[[data]]"></dom-repeat>
+
+        <template id="cont"></template>
+        <slot id="content"></slot>
+    </template>
+
+
+    <script>
+      /**
+       * `cube-repeat`
+       * Repeat a provided template using a provided dataset
+       *
+       * @customElement
+       * @polymer
+       * @demo demo/index.html
+       */
+      class CubeRepeat extends Polymer.Element {
+        static get is() {
+          return 'cube-repeat';
+        }
+
+        static get properties() {
+          return {
+            data: {
+              type: Array, value: function() {
+                return [];
+              },
+            },
+            dataUrl: {type: String, value: ''},
+            templateUrl: {type: String, value: ''},
+            tpl: {type: String, value: '', computed: '__updatePending(_pendingTpl,_status)'},
+            _pendingTpl: {type: String, value: ''},
+            _defaultTpl: {type: String, value: ''},
+          };
+        }
+
+        static get observers() {
+          return ['update(tpl,_defaultTpl)'];
+        }
+
+        // noinspection JSMethodCanBeStatic
+        __updatePending(pending, status) {
+          if (status === 200) {
+            return pending;
+          }
+          return '';
+        }
+
+        connectedCallback() {
+          super.connectedCallback();
+          let cont = this.$.cont;
+          this._nodeObserver = Polymer.dom(this.$.content).observeNodes(
+              function(mutations) {
+                for (let i = 0; i < mutations.addedNodes.length; i++) {
+                  cont.content.appendChild(mutations.addedNodes[i]);
+                }
+                this._defaultTpl = cont.innerHTML;
+              }.bind(this),
+          );
+        }
+
+        update() {
+          this.__debounceUpdate(this.__update);
+        }
+
+        __debounceUpdate(fn, delay) {
+          this.__updateDebouncer = Polymer.Debouncer.debounce(
+              this.__updateDebouncer,
+              delay > 0 ? Polymer.Async.timeOut.after(delay) : Polymer.Async.microTask,
+              fn.bind(this),
+          );
+          Polymer.enqueueDebouncer(this.__updateDebouncer);
+        }
+
+        __update() {
+          let tpl = this.tpl || this._defaultTpl, target = this.$.rep, template;
+          if (tpl) {
+            template = document.createElement('template');
+            template.innerHTML = tpl;
+
+            // remove old instances
+            for (let instanceIdx in target.__instances) {
+              if (target.__instances.hasOwnProperty(instanceIdx)) {
+                for (let nodeIdx in target.__instances[instanceIdx].children) {
+                  if (target.__instances[instanceIdx].children.hasOwnProperty(nodeIdx)) {
+                    this.root.removeChild(target.__instances[instanceIdx].children[nodeIdx]);
+                  }
+                }
+              }
+            }
+            target.textContent = '';
+
+            // apply new template
+            target.appendChild(template);
+
+            // reset dom-repeat
+            target.__instances = [];
+            target.__limit = Infinity;
+            target.__pool = [];
+            target.__renderDebouncer = null;
+            target.__itemsIdxToInstIdx = {};
+            target.__chunkCount = null;
+            target.__lastChunkTime = null;
+            target.__needFullRefresh = false;
+            target.__sortFn = null;
+            target.__filterFn = null;
+            target.__observePaths = null;
+            target.__ctor = null;
+
+            // force render
+            target.render();
+          }
+        }
+      }
+
+      window.customElements.define(CubeRepeat.is, CubeRepeat);
+    </script>
+</dom-module>
