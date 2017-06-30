@@ -2,6 +2,10 @@
   "name": "cube-repeat",
   "description": "Repeat a provided template using a provided dataset",
   "main": "cube-repeat.html",
+  "ignore": [
+    "/.*",
+    "/test/"
+  ],
   "dependencies": {
     "polymer": "Polymer/polymer#^2.0.0",
     "cube-resource": "CubexElements/cube-resource"

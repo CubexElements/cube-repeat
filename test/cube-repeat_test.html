@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="en">
-  <head>
+<head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, minimum-scale=1, initial-scale=1, user-scalable=yes">
 
@@ -10,43 +10,116 @@
     <script src="../../web-component-tester/browser.js"></script>
 
     <link rel="import" href="../cube-repeat.html">
-  </head>
-  <body>
+</head>
+<body>
 
-    <test-fixture id="BasicTestFixture">
-      <template>
-        <cube-repeat></cube-repeat>
-      </template>
-    </test-fixture>
-
-    <test-fixture id="ChangedPropertyTestFixture">
-      <template>
-        <cube-repeat prop1="new-prop1"></cube-repeat>
-      </template>
-    </test-fixture>
-
+<dom-module id="x-cube-repeat-test" attributes="items template-url items-url">
+    <template>
+        <cube-repeat items="[[items]]" template-url="[[templateUrl]]" items-url="[[itemsUrl]]">
+            <template>
+                <div>[[item.name]]</div>
+            </template>
+        </cube-repeat>
+    </template>
     <script>
-      suite('cube-repeat', function() {
-
-        test('instantiating the element with default properties works', function() {
-          var element = fixture('BasicTestFixture');
-          assert.equal(element.prop1, 'cube-repeat');
-          var elementShadowRoot = element.shadowRoot;
-          var elementHeader = elementShadowRoot.querySelector('h2');
-          assert.equal(elementHeader.innerHTML, 'Hello cube-repeat!');
-        });
-
-        test('setting a property on the element works', function() {
-          // Create a test fixture
-          var element = fixture('ChangedPropertyTestFixture');
-          assert.equal(element.prop1, 'new-prop1');
-          var elementShadowRoot = element.shadowRoot;
-          var elementHeader = elementShadowRoot.querySelector('h2');
-          assert.equal(elementHeader.innerHTML, 'Hello new-prop1!');
-        });
-
-      });
+      Polymer({is: 'x-cube-repeat-test'});
     </script>
+</dom-module>
 
-  </body>
+<test-fixture id="basic">
+    <template>
+        <dom-bind>
+            <template>
+                <x-cube-repeat-test id="repeat" items="[[items]]"></x-cube-repeat-test>
+            </template>
+        </dom-bind>
+    </template>
+</test-fixture>
+
+<script>
+  suite('cube-repeat', function() {
+    let server;
+
+    setup(function() {
+      server = sinon.fakeServer.create();
+      server.respondWith(
+          'GET',
+          /items\.json/,
+          [
+            200,
+            '{"Content-Type":"application/json"}',
+            '[{"name":"Addax"},{"name":"Bongo"},{"name":"Caribou"}]',
+          ],
+      );
+      server.respondWith(
+          'GET',
+          /template\.html/,
+          [
+            200,
+            '{"Content-Type":"application/json"}',
+            '<span>[[item.name]]</span>',
+          ],
+      );
+    });
+
+    teardown(function() {
+      server.restore();
+    });
+
+    test('explicit items', function() {
+      let fx = fixture('basic');
+      let repeat = fx.$.repeat;
+      repeat.items = [{name: 'Apple'}, {name: 'Banana'}];
+      Polymer.flush();
+
+      let stamped = repeat.root.querySelectorAll('*:not(template):not(cube-repeat)');
+      assert.equal(stamped[0].outerHTML, '<div>Apple</div>');
+      assert.equal(stamped[1].outerHTML, '<div>Banana</div>');
+    });
+
+    test('remote items', function() {
+      let fx = fixture('basic');
+      let repeat = fx.$.repeat;
+      repeat.itemsUrl = 'items.json';
+      server.respond();
+      Polymer.flush();
+
+      let stamped = repeat.root.querySelectorAll('*:not(template):not(cube-repeat)');
+      assert.equal(stamped[0].outerHTML, '<div>Addax</div>');
+      assert.equal(stamped[1].outerHTML, '<div>Bongo</div>');
+      assert.equal(stamped[2].outerHTML, '<div>Caribou</div>');
+    });
+
+    test('remote template', function() {
+      let fx = fixture('basic');
+      let repeat = fx.$.repeat;
+      repeat.items = [{name: 'Apple'}, {name: 'Banana'}];
+      repeat.templateUrl = 'template.html';
+      server.respond();
+      Polymer.flush();
+
+      let stamped = repeat.root.querySelectorAll('*:not(template):not(cube-repeat)');
+      assert.equal(stamped[0].outerHTML, '<span>Apple</span>');
+      assert.equal(stamped[1].outerHTML, '<span>Banana</span>');
+    });
+
+    test('remote template and items', function() {
+      let fx = fixture('basic');
+      let repeat = fx.$.repeat;
+      repeat.items = [{name: 'Apple'}, {name: 'Banana'}];
+      repeat.itemsUrl = 'items.json';
+      repeat.templateUrl = 'template.html';
+      server.respond();
+      Polymer.flush();
+
+      let stamped = repeat.root.querySelectorAll('*:not(template):not(cube-repeat)');
+      assert.equal(stamped[0].outerHTML, '<span>Addax</span>');
+      assert.equal(stamped[1].outerHTML, '<span>Bongo</span>');
+      assert.equal(stamped[2].outerHTML, '<span>Caribou</span>');
+    });
+
+  });
+</script>
+
+</body>
 </html>
