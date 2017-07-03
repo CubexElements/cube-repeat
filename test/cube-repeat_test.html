@@ -82,6 +82,7 @@
       Polymer.flush();
 
       let stamped = repeat.root.querySelectorAll('*:not(template):not(cube-repeat)');
+      assert.equal(stamped.length, 2);
       assert.equal(stamped[0].outerHTML, '<div>Apple</div>');
       assert.equal(stamped[1].outerHTML, '<div>Banana</div>');
     });
@@ -94,6 +95,7 @@
       Polymer.flush();
 
       let stamped = repeat.root.querySelectorAll('*:not(template):not(cube-repeat)');
+      assert.equal(stamped.length, 3);
       assert.equal(stamped[0].outerHTML, '<div>Addax</div>');
       assert.equal(stamped[1].outerHTML, '<div>Bongo</div>');
       assert.equal(stamped[2].outerHTML, '<div>Caribou</div>');
@@ -108,6 +110,7 @@
       Polymer.flush();
 
       let stamped = repeat.root.querySelectorAll('*:not(template):not(cube-repeat)');
+      assert.equal(stamped.length, 2);
       assert.equal(stamped[0].outerHTML, '<span>Apple</span>');
       assert.equal(stamped[1].outerHTML, '<span>Banana</span>');
     });
@@ -122,6 +125,7 @@
       Polymer.flush();
 
       let stamped = repeat.root.querySelectorAll('*:not(template):not(cube-repeat)');
+      assert.equal(stamped.length,3);
       assert.equal(stamped[0].outerHTML, '<span>Addax</span>');
       assert.equal(stamped[1].outerHTML, '<span>Bongo</span>');
       assert.equal(stamped[2].outerHTML, '<span>Caribou</span>');
@@ -136,6 +140,7 @@
       Polymer.flush();
 
       let stamped = repeat.root.querySelectorAll('*:not(template):not(cube-repeat)');
+      assert.equal(stamped.length, 2);
       assert.equal(stamped[0].outerHTML, '<span>Apple</span>');
       assert.equal(stamped[1].outerHTML, '<span>Banana</span>');
 
@@ -144,6 +149,7 @@
       Polymer.flush();
 
       stamped = repeat.root.querySelectorAll('*:not(template):not(cube-repeat)');
+      assert.equal(stamped.length, 2);
       assert.equal(stamped[0].outerHTML, '<em>Apple</em>');
       assert.equal(stamped[1].outerHTML, '<em>Banana</em>');
     });
