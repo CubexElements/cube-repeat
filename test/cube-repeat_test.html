@@ -60,6 +60,15 @@
             '<span>[[item.name]]</span>',
           ],
       );
+      server.respondWith(
+          'GET',
+          /template2\.html/,
+          [
+            200,
+            '{"Content-Type":"application/json"}',
+            '<em>[[item.name]]</em>',
+          ],
+      );
     });
 
     teardown(function() {
@@ -116,6 +125,27 @@
       assert.equal(stamped[0].outerHTML, '<span>Addax</span>');
       assert.equal(stamped[1].outerHTML, '<span>Bongo</span>');
       assert.equal(stamped[2].outerHTML, '<span>Caribou</span>');
+    });
+
+    test('remote template changed', function() {
+      let fx = fixture('basic');
+      let repeat = fx.$.repeat;
+      repeat.items = [{name: 'Apple'}, {name: 'Banana'}];
+      repeat.templateUrl = 'template.html';
+      server.respond();
+      Polymer.flush();
+
+      let stamped = repeat.root.querySelectorAll('*:not(template):not(cube-repeat)');
+      assert.equal(stamped[0].outerHTML, '<span>Apple</span>');
+      assert.equal(stamped[1].outerHTML, '<span>Banana</span>');
+
+      repeat.templateUrl = 'template2.html';
+      server.respond();
+      Polymer.flush();
+
+      stamped = repeat.root.querySelectorAll('*:not(template):not(cube-repeat)');
+      assert.equal(stamped[0].outerHTML, '<em>Apple</em>');
+      assert.equal(stamped[1].outerHTML, '<em>Banana</em>');
     });
 
   });
