@@ -165,7 +165,7 @@
             let itemIdx = isntIdxToItemsIdx[instIdx];
             let item = items[itemIdx];
             itemsIdxToInstIdx[itemIdx] = instIdx;
-            if (inst && instIdx < this.__chunkLimit) {
+            if (inst && instIdx < this.__limit) {
               inst._setPendingProperty(this.as, item);
               inst._setPendingProperty(this.indexAs, instIdx);
               inst._setPendingProperty(this.itemsIndexAs, itemIdx);
