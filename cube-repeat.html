@@ -45,7 +45,22 @@
             itemsUrl: {type: String, value: '', observer: '_itemsUrlChanged'},
             templateUrl: {type: String, value: '', observer: '_templateUrlChanged'},
             auth: {type: Boolean, value: false},
+
+            /**
+             * Delete this (and `__applyFullRefresh` method) if https://github.com/Polymer/polymer/pull/4721 gets merged
+             */
+            limit: {
+              type: Number,
+              value: 0,
+              observer: '__limitChanged',
+            },
           };
+        }
+
+        __limitChanged() {
+          if (this.items) {
+            this.__debounceRender(this.__render);
+          }
         }
 
         _itemsUrlChanged(url) {
@@ -115,6 +130,54 @@
           this.__filterFn = null;
           this.__observePaths = null;
           this.__ctor = null;
+        }
+
+        /**
+         * Delete this (and `limit` property) if https://github.com/Polymer/polymer/pull/4721 gets merged
+         * @private
+         */
+        __applyFullRefresh() {
+          const items = this.items || [];
+          let isntIdxToItemsIdx = new Array(items.length);
+          for (let i = 0; i < items.length; i++) {
+            isntIdxToItemsIdx[i] = i;
+          }
+          // Apply user filter
+          if (this.__filterFn) {
+            isntIdxToItemsIdx = isntIdxToItemsIdx.filter((i, idx, array) =>
+                this.__filterFn(items[i], idx, array));
+          }
+          // Apply user sort
+          if (this.__sortFn) {
+            isntIdxToItemsIdx.sort((a, b) => this.__sortFn(items[a], items[b]));
+          }
+
+          // items->inst map kept for item path forwarding
+          const itemsIdxToInstIdx = this.__itemsIdxToInstIdx = {};
+          let instIdx = 0;
+          // Generate instances and assign items
+          let limit = Math.min(isntIdxToItemsIdx.length, this.__limit);
+          if (this.limit > 0 && this.limit < limit) {
+            limit = this.limit;
+          }
+          for (; instIdx < limit; instIdx++) {
+            let inst = this.__instances[instIdx];
+            let itemIdx = isntIdxToItemsIdx[instIdx];
+            let item = items[itemIdx];
+            itemsIdxToInstIdx[itemIdx] = instIdx;
+            if (inst && instIdx < this.__chunkLimit) {
+              inst._setPendingProperty(this.as, item);
+              inst._setPendingProperty(this.indexAs, instIdx);
+              inst._setPendingProperty(this.itemsIndexAs, itemIdx);
+              inst._flushProperties();
+            } else {
+              this.__insertInstance(item, instIdx, itemIdx);
+            }
+          }
+          // Remove any extra instances from previous state
+          for (let i = this.__instances.length - 1; i >= instIdx; i--) {
+            this.__detachAndRemoveInstance(i);
+          }
         }
       }
 
